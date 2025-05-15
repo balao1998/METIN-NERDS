@@ -77,16 +77,15 @@ HWND FindWindowByProcessName(LPCTSTR processName, bool verbose = true) {
 }
 
 
-void SendSpaceToWindow(HWND hwnd, int count = 1, DWORD delay = 500) {
+void SendKeyToWindow(HWND hwnd,WORD scancode,bool keyDown) {
     if (!hwnd) {
         std::wcout << L"Cannot send keys - no target window" << std::endl;
         return;
     }
 
-    std::wcout << L"Sending " << count << L" space keys to window (HWND: "
+    std::wcout << L"Sending " << "1" << L" keys to window (HWND: "
                << hwnd << L")" << std::endl;
 
-    MessageBox(NULL, L"Click OK to start sending space keys", L"Foreground Permission", MB_OK);
 
     if (!SetForegroundWindow(hwnd)) {
         std::wcerr << L"Warning: Failed to bring window to foreground" << std::endl;
@@ -95,44 +94,33 @@ void SendSpaceToWindow(HWND hwnd, int count = 1, DWORD delay = 500) {
 
     INPUT input;
     input.type = INPUT_KEYBOARD;
-    input.ki.wScan = 0;
+    input.ki.wScan = scancode;
     input.ki.time = 0;
-    input.ki.dwExtraInfo = 0;
+    input.ki.dwExtraInfo = GetMessageExtraInfo();
+    input.ki.dwFlags = KEYEVENTF_SCANCODE | (keyDown ? 0 : KEYEVENTF_KEYUP);
+    input.ki.wVk = 0;
 
-    for (int i = 0; i < count; i++) {
-        input.ki.wVk = VK_SPACE;
-        input.ki.dwFlags = 0;
-        SendInput(1, &input, sizeof(INPUT));
-
-        input.ki.dwFlags = KEYEVENTF_KEYUP;
-        SendInput(1, &input, sizeof(INPUT));
-
-        std::wcout << L"  Sent space key (" << i + 1 << L"/" << count << L")" << std::endl;
-
-        if (i < count - 1) {
-            Sleep(delay);
-        }
-    }
+    SendInput(1, &input, sizeof(INPUT)); 
 }
 
 int _tmain(int argc, TCHAR* argv[]) {
     LPCTSTR processName = TEXT("notepad.exe");
-    int count = 5;
-    DWORD delay = 500;
+    WORD scancode = 57;
+    DWORD delay = 100;
 
     if (argc > 1) processName = argv[1];
-    if (argc > 2) count = _ttoi(argv[2]);
+    if (argc > 2) scancode = _ttoi(argv[2]);
     if (argc > 3) delay = _ttoi(argv[3]);
 
-    std::wcout << L"\n=== Space Key Sender ===" << std::endl;
+    std::wcout << L"\n=== Key Sender ===" << std::endl;
     std::wcout << L"Target process: " << processName << std::endl;
-    std::wcout << L"Key count: " << count << std::endl;
+    std::wcout << L"ScanCode : " << scancode << std::endl;
     std::wcout << L"Delay: " << delay << L" ms\n" << std::endl;
 
-    
-
     HWND hwnd = FindWindowByProcessName(processName);
-    SendSpaceToWindow(hwnd, count, delay);
+    SendKeyToWindow(hwnd, scancode, true);
+    Sleep(delay);
+    SendKeyToWindow(hwnd,scancode,false);
 
     std::wcout << L"\nOperation completed" << std::endl;
     return 0;
